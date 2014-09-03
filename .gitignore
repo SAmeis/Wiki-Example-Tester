@@ -8,3 +8,6 @@ lib
 *.po
 *.ldp
 *.lps
+*.exe
+*.ico
+*.res
