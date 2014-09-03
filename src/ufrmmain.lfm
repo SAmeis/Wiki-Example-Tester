@@ -66,7 +66,7 @@ object FrmMain: TFrmMain
     Left = 336
     Height = 23
     Top = -2
-    Width = 80
+    Width = 360
     Anchors = [akLeft, akRight, akBottom]
     BorderSpacing.Bottom = 6
     ReadOnly = True
@@ -88,19 +88,6 @@ object FrmMain: TFrmMain
     ScrollBars = ssAutoBoth
     TabOrder = 3
   end
-  object BtnDumpContent: TButton
-    AnchorSideTop.Control = MeContentDump
-    AnchorSideRight.Control = MeContentDump
-    Left = 250
-    Height = 41
-    Top = 190
-    Width = 62
-    Anchors = [akTop, akRight]
-    BorderSpacing.Around = 6
-    Caption = 'Dump'
-    OnClick = BtnDumpContentClick
-    TabOrder = 4
-  end
   object MeSiteContent: TMemo
     AnchorSideLeft.Control = BtnGetCode
     AnchorSideLeft.Side = asrBottom
@@ -113,6 +100,6 @@ object FrmMain: TFrmMain
     Anchors = [akTop, akLeft, akBottom]
     BorderSpacing.Left = 6
     BorderSpacing.Right = 6
-    TabOrder = 5
+    TabOrder = 4
   end
 end
