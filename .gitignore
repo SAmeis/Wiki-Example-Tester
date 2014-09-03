@@ -1,0 +1,10 @@
+backup
+lib
+*.o
+*.a
+*.ppu
+*.bak
+*.~xml
+*.po
+*.ldp
+*.lps

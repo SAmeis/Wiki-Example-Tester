@@ -1,0 +1,118 @@
+object FrmMain: TFrmMain
+  Left = 307
+  Height = 365
+  Top = 159
+  Width = 883
+  Caption = 'Wiki Example Tester (WET)'
+  ClientHeight = 365
+  ClientWidth = 883
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  LCLVersion = '1.3'
+  object Label1: TLabel
+    AnchorSideLeft.Control = MePages
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = MePages
+    AnchorSideRight.Side = asrBottom
+    Left = 18
+    Height = 21
+    Top = 0
+    Width = 214
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 12
+    BorderSpacing.Right = 12
+    BorderSpacing.Bottom = 6
+    Caption = 'Pages'
+    Font.Height = -16
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object MePages: TMemo
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Label1
+    AnchorSideTop.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 6
+    Height = 338
+    Top = 27
+    Width = 238
+    Align = alCustom
+    Anchors = [akTop, akLeft, akBottom]
+    BorderSpacing.Left = 6
+    BorderSpacing.Right = 6
+    Lines.Strings = (
+      'User:Socke/Testable Test'
+    )
+    ScrollBars = ssAutoBoth
+    TabOrder = 0
+  end
+  object BtnGetCode: TButton
+    AnchorSideLeft.Control = MePages
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = MePages
+    Left = 250
+    Height = 41
+    Top = 33
+    Width = 62
+    BorderSpacing.Around = 6
+    Caption = 'Get Code'
+    OnClick = BtnGetCodeClick
+    TabOrder = 1
+  end
+  object EURL: TEdit
+    AnchorSideRight.Side = asrBottom
+    Left = 336
+    Height = 23
+    Top = -2
+    Width = 80
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Bottom = 6
+    ReadOnly = True
+    TabOrder = 2
+  end
+  object MeContentDump: TMemo
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 318
+    Height = 181
+    Top = 184
+    Width = 402
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    Lines.Strings = (
+      ''
+    )
+    ReadOnly = True
+    ScrollBars = ssAutoBoth
+    TabOrder = 3
+  end
+  object BtnDumpContent: TButton
+    AnchorSideTop.Control = MeContentDump
+    AnchorSideRight.Control = MeContentDump
+    Left = 250
+    Height = 41
+    Top = 190
+    Width = 62
+    Anchors = [akTop, akRight]
+    BorderSpacing.Around = 6
+    Caption = 'Dump'
+    OnClick = BtnDumpContentClick
+    TabOrder = 4
+  end
+  object MeSiteContent: TMemo
+    AnchorSideLeft.Control = BtnGetCode
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = MePages
+    AnchorSideBottom.Control = MeContentDump
+    Left = 318
+    Height = 157
+    Top = 27
+    Width = 402
+    Anchors = [akTop, akLeft, akBottom]
+    BorderSpacing.Left = 6
+    BorderSpacing.Right = 6
+    TabOrder = 5
+  end
+end
