@@ -65,6 +65,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
     property Code: TStrings read fCode;
+    property SourceCode: TStrings read fCode; // alias for Code
     property OperatingSystem: String read fOperatingSystem write fOperatingSystem;
     property Packages: TStrings read fPackages;
     property Preset: String read fPreset write fPreset;

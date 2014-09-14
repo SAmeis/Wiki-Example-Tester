@@ -3,7 +3,7 @@
 WET---Wiki Example Tester---is a tool for testing [http://freepascal.org](Free Pascal) Examples in the official [http://wiki.freepascal.org](wiki).
 
 ## How to use ##
-It's easy. The code example has to be marked with the wiki template [http://wiki.freepascal.org/User:Socke/Testable_Begin]; have a look at the template documentation to get the details.
+It's easy. The code example has to be marked with the wiki template [http://wiki.freepascal.org/User:Socke/Testable_Begin](http://wiki.freepascal.org/User:Socke/Testable_Begin); have a look at the template documentation to get the details.
 
 ## License ##
 

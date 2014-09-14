@@ -26,7 +26,7 @@
 }
 unit umessagemanager;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$Interfaces CORBA}
 
 interface
 
@@ -54,13 +54,53 @@ uses
   EMessageNotSupported  - Message type is not supported by this thread
 }
 
+const
+  IID_EXCEPTIONMESSAGE = '{65ABAC45-7AF2-4C87-B6F6-CC80BEBB2F49}';
+  IID_HASEXCEPTIONMESSAGE = '{045DA6D7-5694-44EC-85D5-16EF4BCD32BB}';
 type
+
+  EShutDown = class(EThread);
+  ETerminated = class(EThread);
+
   { TMessage }
 
   TMessage = class(TPersistent)
+  protected
+    procedure AssignTo(Dest: TPersistent); override;
   public
     constructor Create; virtual;
     function Clone: TMessage; virtual;
+  end;
+
+  { TExceptionMessage }
+
+  TExceptionMessage = class(TMessage)
+  private
+    fExceptionClass: TClass;
+    fExceptionMessage: String;
+  protected
+    procedure AssignTo(Dest: TPersistent); override;
+  public
+    property ExceptionClass: TClass read fExceptionClass write fExceptionClass;
+    property ExceptionMessage: String read fExceptionMessage write fExceptionMessage;
+  end;
+
+  { IHasExceptionMessage }
+
+  IHasExceptionMessage = interface [IID_HASEXCEPTIONMESSAGE]
+  function GetExceptionMessage: TExceptionMessage;
+    property ExceptionMessage: TExceptionMessage read GetExceptionMessage;
+  end;
+
+  { IExceptionMessage }
+
+  IExceptionMessage = interface [IID_EXCEPTIONMESSAGE]
+    function GetExceptionClass: TClass;
+    function GetExceptionMessage: String;
+    procedure SetExceptionClass(aValue: TClass);
+    procedure SetExceptionMessage(aValue: String);
+    property ExceptionClass: TClass read GetExceptionClass write SetExceptionClass;
+    property ExceptionMessage: String read GetExceptionMessage write SetExceptionMessage;
   end;
 
   TMessageClass = class of TMessage;
@@ -88,6 +128,7 @@ type
 
   TQueuedThread = class(TThread, IFPObserver)
   private
+    fShutdown: Boolean;
     fDelayBetweenMessages: Integer;
     fMessageQueue: TThreadList;
     fWakeUpEvent: PRTLEvent;
@@ -95,18 +136,22 @@ type
     Procedure FPOObservedChanged(ASender : TObject; Operation : TFPObservedOperation; {%H-}Data : Pointer);
   protected
     procedure FreeAndNilThreadListWithObjects(var aTL: TThreadList);
-    procedure ProcessMessage(aMessage: TMessage); virtual; abstract;
+    procedure ProcessMessage(aMessage: TMessage; var FreeMessage: Boolean); virtual;
+    procedure ProcessMessage({%H-}aMessage: TMessage); virtual;
     procedure Execute; override;
-    procedure DispatchMessage(aMessage: TMessage); virtual;
+    class procedure DispatchMessage(aMessage: TMessage); static; virtual;
     property  DelayBetweenMessages: Integer read fDelayBetweenMessages write fDelayBetweenMessages;
   public
     constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt =
        DefaultStackSize); reintroduce; virtual;
     destructor Destroy; override;
     procedure AddMessage(aMessage: TMessage); virtual;  // may restrict some message classes
-    procedure Terminate; reintroduce;
+    procedure Terminate; reintroduce; virtual;
+    procedure Shutdown;  // process all queued messages and terminate
     property WakeUpTimeout: Integer read fWakeUpTimeout write fWakeUpTimeout;
   end;
+
+  TQueuedThreadClass = class of TQueuedThread;
 
   { TMessageManager }
 
@@ -127,10 +172,187 @@ type
     property MainThreadForwarder: TQueuedThread read fMainThreadForwarder write fMainThreadForwarder;
   end;
 
+  { TAbstractThreadPool }
+
+  TAbstractThreadPool = class(TQueuedThread)
+  public
+    type TOnThreadCreated = procedure(aThread: TQueuedThread) of object; // called after workerthread.create in this thread
+  private
+    type TThreadPool = array of TQueuedThread;
+  private
+    fFadeOut    : Boolean;
+    fOnThreadCreated: TOnThreadCreated;
+    fWorkerClass: TQueuedThreadClass;
+    fThreadPool : TThreadPool;
+    function GetPoolSize: SizeInt;
+    function GetWorkerClass: TQueuedThreadClass;
+    procedure SetPoolSize(aValue: SizeInt);
+    procedure SetWorkerClass(aValue: TQueuedThreadClass);
+  protected
+    fCSThreadPools: TRTLCriticalSection;
+    property ThreadPool   : TThreadPool read fThreadPool;
+  public
+    constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt =
+       DefaultStackSize); override;
+    destructor Destroy; override;
+    property PoolSize: SizeInt read GetPoolSize write SetPoolSize;
+    property WorkerClass: TQueuedThreadClass read GetWorkerClass write SetWorkerClass;
+    property FadeOut: Boolean read fFadeOut write fFadeOut default False;  // true => workers finish current queue before termination
+    property OnThreadCreated: TOnThreadCreated read fOnThreadCreated write fOnThreadCreated;
+  end;
+
+  { TRoundRobinThreadPool }
+
+  TRoundRobinThreadPool = class(TAbstractThreadPool)
+  private
+    fNextWorkerIndex: SizeInt;
+  protected
+    procedure ProcessMessage(aMessage: TMessage; var FreeMessage: Boolean); override;
+  end;
+
 var
   MessageManager: TMessageManager;
 
 implementation
+
+{ TRoundRobinThreadPool }
+
+procedure TRoundRobinThreadPool.ProcessMessage(aMessage: TMessage;
+  var FreeMessage: Boolean);
+var
+  w: TQueuedThread;
+begin
+  EnterCriticalsection(fCSThreadPools);
+  try
+   Assert(Length(fThreadPool) > 0, 'Thread pool not populated');
+
+   if fNextWorkerIndex > high(ThreadPool) then
+     fNextWorkerIndex := 0;
+   w := fThreadPool[fNextWorkerIndex];
+
+   w.AddMessage(aMessage);
+   FreeMessage := False;
+
+   inc(fNextWorkerIndex);
+  finally
+    LeaveCriticalsection(fCSThreadPools);
+  end;
+end;
+
+{ TAbstractThreadPool }
+
+function TAbstractThreadPool.GetPoolSize: SizeInt;
+begin
+  EnterCriticalsection(fCSThreadPools);
+  Result := Length(fThreadPool);
+  LeaveCriticalsection(fCSThreadPools);
+end;
+
+function TAbstractThreadPool.GetWorkerClass: TQueuedThreadClass;
+begin
+  EnterCriticalsection(fCSThreadPools);
+  Result := fWorkerClass;
+  LeaveCriticalsection(fCSThreadPools);
+end;
+
+procedure TAbstractThreadPool.SetPoolSize(aValue: SizeInt);
+var
+  OldLength: Integer;
+  c: TQueuedThreadClass;
+  i: SizeInt;
+  o: TOnThreadCreated;
+  f: Boolean;
+begin
+  if aValue < 0 then
+    aValue := 0;
+
+  EnterCriticalsection(fCSThreadPools);
+  try
+    OldLength := Length(fThreadPool);
+    if OldLength = aValue then
+      exit
+    else if aValue > OldLength then  // grow
+    begin
+      SetLength(fThreadPool, aValue);
+      // get values, so they may not change while using them
+      c := fWorkerClass;
+      o := fOnThreadCreated;
+      f := FadeOut;
+
+      for i := OldLength to High(fThreadPool) do
+      begin
+        if Assigned(c) then
+        begin
+          fThreadPool[i] := c.Create(True, DefaultStackSize);
+          fThreadPool[i].FreeOnTerminate := True;
+          if Assigned(o) then
+            o(fThreadPool[i]);
+          fThreadPool[i].Start;
+        end;
+      end;
+    end else  // shrink
+    begin
+      for i := high(fThreadPool) downto aValue do
+      begin
+        if f then
+          fThreadPool[i].Shutdown
+        else
+          fThreadPool[i].Terminate;
+      end;
+      SetLength(fThreadPool, aValue);
+    end;
+
+  finally
+    LeaveCriticalsection(fCSThreadPools);
+  end;
+end;
+
+procedure TAbstractThreadPool.SetWorkerClass(aValue: TQueuedThreadClass);
+var
+  OldPoolSize: SizeInt;
+begin
+  EnterCriticalsection(fCSThreadPools);
+  try
+    if fWorkerClass = aValue then Exit;
+    OldPoolSize := PoolSize;
+    // remove all threads
+    SetPoolSize(0);
+    fWorkerClass := aValue;
+    // recreate with new threads
+    SetPoolSize(OldPoolSize);
+  finally
+    LeaveCriticalsection(fCSThreadPools);
+  end;
+end;
+
+constructor TAbstractThreadPool.Create(CreateSuspended: Boolean;
+  const StackSize: SizeUInt);
+begin
+  inherited Create(True, StackSize);
+  InitCriticalSection(fCSThreadPools);
+
+  if CreateSuspended then
+    Self.Start;
+end;
+
+destructor TAbstractThreadPool.Destroy;
+begin
+  SetPoolSize(0);
+  DoneCriticalsection(fCSThreadPools);
+  inherited Destroy;
+end;
+
+{ TExceptionMessage }
+
+procedure TExceptionMessage.AssignTo(Dest: TPersistent);
+begin
+  inherited AssignTo(Dest);
+  if Dest is TExceptionMessage then
+  begin
+    TExceptionMessage(Dest).fExceptionClass := Self.fExceptionClass;
+    TExceptionMessage(Dest).fExceptionMessage := Self.fExceptionMessage;
+  end;
+end;
 
 { EMessageNotSupported }
 
@@ -144,6 +366,13 @@ end;
 
 { TMessage }
 
+procedure TMessage.AssignTo(Dest: TPersistent);
+begin
+  // should be handled before; but if not implemented: don't raise an exception
+  if not(Dest is TMessage) then
+    inherited AssignTo(Dest);
+end;
+
 constructor TMessage.Create;
 begin
   inherited Create;
@@ -151,6 +380,8 @@ end;
 
 function TMessage.Clone: TMessage;
 begin
+  if not Assigned(Self) then Exit(Nil);
+
   Result := TMessageClass(Self.ClassType).Create;
   Result.Assign(Self);
 end;
@@ -170,7 +401,8 @@ begin
     while i >= 0 do
     begin
       handler := TThreadMessageHandler(l.Items[i]);
-      if aMessage.ClassType = handler.MessageClass then
+      // handler.MessageClass => all messages accepted; then AddMessage() may not raise any exception
+      if (aMessage.ClassType = handler.MessageClass) or not Assigned(handler.MessageClass) then
         try
           if not Assigned(handler.Thread) then
           begin
@@ -312,29 +544,37 @@ procedure TQueuedThread.Execute;
 var
   message: TMessage;
   QueuedCount: Integer;
+  vFreeMessage: Boolean;
 begin
   repeat
     message := GetNextMessage(QueuedCount);
 
     if Assigned(message) then
     try
-      ProcessMessage(message);
+      vFreeMessage := True;
+      ProcessMessage(message, vFreeMessage);
     finally
-      message.Destroy;
-      message := Nil;
+      if vFreeMessage then
+      begin
+        message.Destroy;
+        message := Nil;
+      end;
     end;
 
     if not Terminated then
     begin
       if QueuedCount = 0 then
-        RTLeventWaitFor(fWakeUpEvent, fWakeUpTimeout)
+        if fShutdown then
+          Terminate
+        else
+          RTLeventWaitFor(fWakeUpEvent, fWakeUpTimeout)
       else if (fDelayBetweenMessages <> 0) then
         RTLeventWaitFor(fWakeUpEvent, fDelayBetweenMessages);
     end;
   until Terminated;
 end;
 
-procedure TQueuedThread.DispatchMessage(aMessage: TMessage);
+class procedure TQueuedThread.DispatchMessage(aMessage: TMessage);
 begin
   Assert(Assigned(aMessage), 'Message is nil');
   MessageManager.AddMessage(aMessage);
@@ -364,6 +604,11 @@ end;
 
 procedure TQueuedThread.AddMessage(aMessage: TMessage);
 begin
+  if fShutdown then
+    raise EShutDown.CreateFmt('Thread %d already shut down.', [Self.ThreadID]);
+  if Terminated then
+    raise ETerminated.CreateFmt('Thread %d already terminated.', [Self.ThreadID]);
+
   Assert(Assigned(aMessage), 'Message is nil');
   fMessageQueue.Add(aMessage);
 end;
@@ -382,7 +627,7 @@ begin
     l := tl.LockList;
     try
       for i := 0 to l.Count - 1 do
-        TObject(l.Items[i]).Destroy;
+        TObject(l.Items[i]).Free;
     finally
       tl.UnlockList;
     end;
@@ -390,9 +635,27 @@ begin
   end;
 end;
 
+procedure TQueuedThread.ProcessMessage(aMessage: TMessage;
+  var FreeMessage: Boolean);
+begin
+  ProcessMessage(aMessage);
+  FreeMessage := True;
+end;
+
+procedure TQueuedThread.ProcessMessage(aMessage: TMessage);
+begin
+  // dummy
+end;
+
 procedure TQueuedThread.Terminate;
 begin
   inherited Terminate;
+  RTLeventSetEvent(fWakeUpEvent);
+end;
+
+procedure TQueuedThread.Shutdown;
+begin
+  fShutdown := True;
   RTLeventSetEvent(fWakeUpEvent);
 end;
 

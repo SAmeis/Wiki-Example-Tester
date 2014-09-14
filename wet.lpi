@@ -10,6 +10,9 @@
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
+      <Resources Count="1">
+        <Resource_0 FileName="data\project1.lpi" Type="RCDATA" ResourceName="PRJ_LPI_TEMPL"/>
+      </Resources>
     </General>
     <i18n>
       <EnableI18N LFM="False"/>
@@ -28,16 +31,18 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <RequiredPackages Count="1">
+    <RequiredPackages Count="2">
       <Item1>
-        <PackageName Value="LCL"/>
+        <PackageName Value="LazUtils"/>
       </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="8">
       <Unit0>
         <Filename Value="wet.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value=""/>
       </Unit0>
       <Unit1>
         <Filename Value="src\ufrmmain.pas"/>
@@ -45,23 +50,38 @@
         <ComponentName Value="FrmMain"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+        <UnitName Value="ufrmmain"/>
       </Unit1>
       <Unit2>
         <Filename Value="src\umessagemanager.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="umessagemanager"/>
       </Unit2>
       <Unit3>
         <Filename Value="src\uapplicationforwarder.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="uapplicationforwarder"/>
       </Unit3>
       <Unit4>
         <Filename Value="src\upagecontentretriever.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="upagecontentretriever"/>
       </Unit4>
       <Unit5>
         <Filename Value="src\upagecontentparser.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="upagecontentparser"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="src\ucompileprepare.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ucompileprepare"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="src\upascalcompilation.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="upascalcompilation"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -90,6 +110,9 @@
         </Win32>
       </Options>
     </Linking>
+    <Other>
+      <CustomOptions Value="-dDEBUG"/>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

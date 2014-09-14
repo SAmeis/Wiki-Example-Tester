@@ -7,13 +7,19 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
+  sysutils,
   Forms, ufrmmain, umessagemanager, uapplicationforwarder,
-  upagecontentretriever, upagecontentparser
-  { you can add units after this };
+  upagecontentretriever, upagecontentparser, ucompileprepare, 
+upascalcompilation;
 
 {$R *.res}
 
 begin
+  {$IFDEF DEBUG}
+  if FileExists('heap.trc') then
+    DeleteFile('heap.trc');
+  SetHeapTraceOutput('heap.trc');
+  {$ENDIF}
   RequireDerivedFormResource := True;
   Application.Initialize;
   Application.CreateForm(TFrmMain, FrmMain);

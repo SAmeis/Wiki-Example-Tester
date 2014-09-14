@@ -2,10 +2,10 @@ object FrmMain: TFrmMain
   Left = 307
   Height = 365
   Top = 159
-  Width = 883
+  Width = 1318
   Caption = 'Wiki Example Tester (WET)'
   ClientHeight = 365
-  ClientWidth = 883
+  ClientWidth = 1318
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   LCLVersion = '1.3'
@@ -62,11 +62,12 @@ object FrmMain: TFrmMain
     TabOrder = 1
   end
   object EURL: TEdit
+    AnchorSideRight.Control = MeContentDump
     AnchorSideRight.Side = asrBottom
     Left = 336
     Height = 23
     Top = -2
-    Width = 360
+    Width = 384
     Anchors = [akLeft, akRight, akBottom]
     BorderSpacing.Bottom = 6
     ReadOnly = True
@@ -101,5 +102,19 @@ object FrmMain: TFrmMain
     BorderSpacing.Left = 6
     BorderSpacing.Right = 6
     TabOrder = 4
+  end
+  object MeMessageLog: TMemo
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 888
+    Height = 325
+    Top = 40
+    Width = 430
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ReadOnly = True
+    ScrollBars = ssAutoBoth
+    TabOrder = 5
   end
 end

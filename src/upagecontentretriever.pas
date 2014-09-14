@@ -86,10 +86,9 @@ uses fphttpclient;
 
 procedure TGetPageContentMessage.AssignTo(Dest: TPersistent);
 begin
+  inherited AssignTo(Dest);
   if Dest is TGetPageContentMessage then
-    TGetPageContentMessage(Dest).PageName := Self.PageName
-  else
-    inherited AssignTo(Dest);
+    TGetPageContentMessage(Dest).PageName := Self.PageName;
 end;
 
 { TPageContentRetriever }
@@ -104,7 +103,7 @@ var
   encodedName: String;
   RetrievedMessage: TPageContentRetrievedMessage;
 begin
-  Assert(aMessage is TGetPageContentMessage, 'Invlaid message class');
+  Assert(aMessage is TGetPageContentMessage, 'Invalid message class');
 
   url := BASE_URL + INDEX_PARAMS;
   encodedName := EncodeURLElement(m.PageName);

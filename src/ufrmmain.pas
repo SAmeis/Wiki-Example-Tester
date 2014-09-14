@@ -42,6 +42,7 @@ type
     BtnGetCode: TButton;
     EURL: TEdit;
     Label1: TLabel;
+    MeMessageLog: TMemo;
     MeSiteContent: TMemo;
     MeContentDump: TMemo;
     MePages: TMemo;
@@ -50,6 +51,8 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     fApplicationForwarder: TApplicationForwarder;
+    fApplicationMessageLog: TApplicationForwarder;
+    procedure ProcessMessageLog(Data: PtrInt);
     procedure ProcessMessageFromThread(Data: PtrInt);
     procedure OnContentRetrieved(aMessage: TMessage);
     procedure OnContentParsed(aMessage: TMessage);
@@ -90,11 +93,27 @@ begin
   fApplicationForwarder.RegisterMessage(TPageContentParsedMessage);
   fApplicationForwarder.RegisterMessage(TPageContentParseErrorMessage);
   fApplicationForwarder.OnMessage := @ProcessMessageFromThread;
+
+  fApplicationMessageLog := TApplicationForwarder.Create(False, DefaultStackSize);
+  fApplicationMessageLog.FreeOnTerminate := True;
+  fApplicationMessageLog.OnMessage := @ProcessMessageLog;
+  fApplicationMessageLog.RegisterMessage(nil);
 end;
 
 procedure TFrmMain.FormDestroy(Sender: TObject);
 begin
   fApplicationForwarder.Terminate;
+  fApplicationMessageLog.Terminate;
+end;
+
+procedure TFrmMain.ProcessMessageLog(Data: PtrInt);
+var
+  m: TMessage absolute Data;
+begin
+  Assert(Assigned(m), 'Invalid Message object');
+  MeMessageLog.Lines.Add(DateTimeToStr(now)+' - '+m.ClassName);
+
+  m.Destroy;
 end;
 
 procedure TFrmMain.ProcessMessageFromThread(Data: PtrInt);
