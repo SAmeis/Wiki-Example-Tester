@@ -65,11 +65,14 @@ type
   { TMessage }
 
   TMessage = class(TPersistent)
+  private
+    fUUID: TGuid;
   protected
     procedure AssignTo(Dest: TPersistent); override;
   public
     constructor Create; virtual;
     function Clone: TMessage; virtual;
+    property UUID: TGuid read fUUID;  // identifys a message an all following messages
   end;
 
   { TExceptionMessage }
@@ -368,14 +371,20 @@ end;
 
 procedure TMessage.AssignTo(Dest: TPersistent);
 begin
-  // should be handled before; but if not implemented: don't raise an exception
-  if not(Dest is TMessage) then
+  if Dest is TMessage then
+    TMessage(fUUID) := fUUID
+  else
     inherited AssignTo(Dest);
 end;
 
 constructor TMessage.Create;
 begin
   inherited Create;
+  if CreateGUID(fUUID) <> 0 then
+  begin
+    PInt64(@fUUID)[0] := Random(High(Int64));
+    PInt64(@fUUID)[1] := Random(High(Int64));
+  end;
 end;
 
 function TMessage.Clone: TMessage;
