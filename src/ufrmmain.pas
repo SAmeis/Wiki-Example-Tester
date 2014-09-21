@@ -42,6 +42,7 @@ type
     BtnGetCode: TButton;
     EURL: TEdit;
     Label1: TLabel;
+    Label2: TLabel;
     MeMessageLog: TMemo;
     MeSiteContent: TMemo;
     MeContentDump: TMemo;
@@ -72,17 +73,17 @@ implementation
 { TFrmMain }
 
 procedure TFrmMain.BtnGetCodeClick(Sender: TObject);
+var
+  page: String;
 begin
-  if MePages.Lines.Count > 1 then
-    if MessageDlg('Mehrere Seiten', 'Es sind mehrere Seiten angegeben; es wird im Test jedoch nur die erste Seite verwendet.', mtWarning, mbOKCancel, 0) = mrCancel then
-      exit;
   if MePages.Lines.Count = 0 then
   begin
-    MessageDlg('Keine Seiten angegeben', 'Es sind keine Seiten angegeben.', mtError, [mbOK],0);
+    MessageDlg('No pages', 'No pages specified. Please enter at least one Wiki page to test. Each page has to be on it''s own line.', mtError, [mbOK],0);
     exit;
   end;
   MeSiteContent.Lines.Clear;
-  GetPageContentAsync(MePages.Lines[0]);
+  for page in MePages.Lines do
+    GetPageContentAsync(page);
 end;
 
 procedure TFrmMain.FormCreate(Sender: TObject);
