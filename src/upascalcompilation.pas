@@ -131,7 +131,7 @@ begin
     FPC_ExitStatus
   );
 
-  if rc = 0 then  // everything okay
+  if FPC_ExitStatus = 0 then  // everything okay
     pcd := TPascalCompilationDoneMessage.Create
   else            // exception
     pcd := TPascalCompilationFailedMessage.Create;
