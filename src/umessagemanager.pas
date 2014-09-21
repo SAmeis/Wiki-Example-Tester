@@ -65,7 +65,7 @@ type
   { TMessage }
 
   TMessage = class(TPersistent)
-  private
+  strict private
     fUUID: TGuid;
   protected
     procedure AssignTo(Dest: TPersistent); override;
@@ -78,7 +78,7 @@ type
   { TExceptionMessage }
 
   TExceptionMessage = class(TMessage)
-  private
+  strict private
     fExceptionClass: TClass;
     fExceptionMessage: String;
   protected
@@ -119,7 +119,7 @@ type
   { TThreadMessageHandler }
 
   TThreadMessageHandler = class(TObject)
-  private
+  strict private
     fMessageClass: TMessageClass;
     fThread: TQueuedThread;
   public
@@ -130,20 +130,21 @@ type
   { TQueuedThread }
 
   TQueuedThread = class(TThread, IFPObserver)
-  private
+  strict private
     fShutdown: Boolean;
     fDelayBetweenMessages: Integer;
     fMessageQueue: TThreadList;
     fWakeUpEvent: PRTLEvent;
     fWakeUpTimeout: Integer;
     Procedure FPOObservedChanged(ASender : TObject; Operation : TFPObservedOperation; {%H-}Data : Pointer);
-  protected
+  strict protected
     procedure FreeAndNilThreadListWithObjects(var aTL: TThreadList);
     procedure ProcessMessage(aMessage: TMessage; var FreeMessage: Boolean); virtual;
     procedure ProcessMessage({%H-}aMessage: TMessage); virtual;
-    procedure Execute; override;
     class procedure DispatchMessage(aMessage: TMessage); static; virtual;
     property  DelayBetweenMessages: Integer read fDelayBetweenMessages write fDelayBetweenMessages;
+  protected
+    procedure Execute; override;
   public
     constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt =
        DefaultStackSize); reintroduce; virtual;
@@ -159,10 +160,10 @@ type
   { TMessageManager }
 
   TMessageManager = class(TQueuedThread)
-  private
+  strict private
     fHandler: TThreadList;
     fMainThreadForwarder: TQueuedThread;
-  protected
+  strict protected
     procedure ProcessMessage(aMessage: TMessage); override;
   public
     constructor Create(CreateSuspended: Boolean; const StackSize: SizeUInt =
@@ -180,9 +181,9 @@ type
   TAbstractThreadPool = class(TQueuedThread)
   public
     type TOnThreadCreated = procedure(aThread: TQueuedThread) of object; // called after workerthread.create in this thread
-  private
+  strict private
     type TThreadPool = array of TQueuedThread;
-  private
+  strict private
     fFadeOut    : Boolean;
     fOnThreadCreated: TOnThreadCreated;
     fWorkerClass: TQueuedThreadClass;
@@ -191,7 +192,7 @@ type
     function GetWorkerClass: TQueuedThreadClass;
     procedure SetPoolSize(aValue: SizeInt);
     procedure SetWorkerClass(aValue: TQueuedThreadClass);
-  protected
+  strict protected
     fCSThreadPools: TRTLCriticalSection;
     property ThreadPool   : TThreadPool read fThreadPool;
   public
@@ -207,9 +208,9 @@ type
   { TRoundRobinThreadPool }
 
   TRoundRobinThreadPool = class(TAbstractThreadPool)
-  private
+  strict private
     fNextWorkerIndex: SizeInt;
-  protected
+  strict protected
     procedure ProcessMessage(aMessage: TMessage; var FreeMessage: Boolean); override;
   end;
 
@@ -227,11 +228,11 @@ var
 begin
   EnterCriticalsection(fCSThreadPools);
   try
-   Assert(Length(fThreadPool) > 0, 'Thread pool not populated');
+   Assert(Length(ThreadPool) > 0, 'Thread pool not populated');
 
    if fNextWorkerIndex > high(ThreadPool) then
      fNextWorkerIndex := 0;
-   w := fThreadPool[fNextWorkerIndex];
+   w := ThreadPool[fNextWorkerIndex];
 
    w.AddMessage(aMessage);
    FreeMessage := False;
@@ -372,7 +373,7 @@ end;
 procedure TMessage.AssignTo(Dest: TPersistent);
 begin
   if Dest is TMessage then
-    TMessage(fUUID) := fUUID
+    TMessage(Dest).fUUID := fUUID
   else
     inherited AssignTo(Dest);
 end;
